@@ -1,15 +1,12 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class LevelsController : MonoBehaviour
+public sealed class LevelsController : MonoSingletone<LevelsController>
 {
-    private int currentScene = -1;
+    private int _currentScene = -1;
     public int LevelsCount => SceneManager.sceneCountInBuildSettings - 1;
 
-    public event Action OnLevelLoadingStart;
     public event Action<int> OnLevelLoaded;
     
     private void Start()
@@ -19,7 +16,6 @@ public class LevelsController : MonoBehaviour
     
     private void LoadLevel(int levelNumber)
     {
-        OnLevelLoadingStart?.Invoke();
         StartCoroutine(LoadLevelRoutine(AdjustLevelNumber(levelNumber)));
     }
 
@@ -27,12 +23,12 @@ public class LevelsController : MonoBehaviour
     {
         
         yield return UnloadScenes(1);
-        currentScene = number;
+        _currentScene = number;
         yield return StartCoroutine(LoadSceneRoutine());
 
         yield return null;
 
-        OnLevelLoaded?.Invoke(currentScene);
+        OnLevelLoaded?.Invoke(_currentScene);
     }
     
     private int AdjustLevelNumber(int levelNumber)
@@ -46,7 +42,7 @@ public class LevelsController : MonoBehaviour
     
     private IEnumerator LoadSceneRoutine()
     {
-        yield return SceneManager.LoadSceneAsync(currentScene, LoadSceneMode.Additive);
+        yield return SceneManager.LoadSceneAsync(_currentScene, LoadSceneMode.Additive);
       
         SceneManager.SetActiveScene(SceneManager.GetSceneAt(1));
         

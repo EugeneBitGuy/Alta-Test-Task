@@ -1,9 +1,8 @@
 using System;
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class GameController : MonoSingletone<GameController>
+public sealed class GameController : MonoSingletone<GameController>
 {
     public event Action OnInitCompleted;
     public event Action OnShowFadeUI;
@@ -14,66 +13,57 @@ public class GameController : MonoSingletone<GameController>
 
     private void Start()
     {
-        //LevelsController.Instance.OnLevelLoaded += InvokeOnLevelLoaded;
+        ServicesContainer.Init();
+        LevelsController.Instance.OnLevelLoaded += InvokeOnLevelLoaded;
         Application.targetFrameRate = 60;
-        LateStart();
+        StartCoroutine(LateStart());
     }
 
-    private void LateStart()
+    private IEnumerator LateStart()
     {
-        /*this.DoAfterNextFrameCoroutine(() =>
-        {
-            OnInitCompleted?.Invoke();
-            LoadLevel();
-        });*/
+        yield return null;
+        
+        OnInitCompleted?.Invoke();
+        LoadLevel();
     }
-    
 
     public void InvokeOnStartLevelLoading()
     {
-        /*var levelNumber = SLS.Data.Game.Level.Value + 1;
-        OnLevelStartLoading?.Invoke(levelNumber);*/
-    }
-
-    private void InvokeOnLevelLoaded(int sceneId)
-    {
-        OnLevelLoaded?.Invoke(sceneId);
-        //Taptic.Light();
+        var levelNumber = SaveLoadController.Instance.Data.GameData.LevelNumber + 1;
+        OnLevelStartLoading?.Invoke(levelNumber);
+        InputSystem.Instance.OnTouch += LevelStart;
     }
 
     public void LevelStart()
     {
         OnLevelStarted?.Invoke();
+        InputSystem.Instance.OnTouch -= LevelStart;
     }
 
     public void LevelEnd(bool playerWin)
     {
-        if (playerWin)
-        {
-            //Taptic.Success();
-        }
-        else
-        { 
-            //Taptic.Failure();
-        }
-
         OnLevelEnd?.Invoke(playerWin);
     }
 
     public void LoadLevel()
     {
-        //SLS.Save();
+        SaveLoadController.Instance.Save();
         OnShowFadeUI?.Invoke();
     }
 
     public void NextLevel()
     {
-        //SLS.Data.Game.Level.Value++;
+        SaveLoadController.Instance.Data.GameData.LevelNumber++;
         LoadLevel();
     }
 
     public void RestartLevel()
     {
         LoadLevel();
+    }
+
+    private void InvokeOnLevelLoaded(int sceneId)
+    {
+        OnLevelLoaded?.Invoke(sceneId);
     }
 }
